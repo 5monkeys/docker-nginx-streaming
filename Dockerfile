@@ -28,19 +28,31 @@ RUN curl -L https://github.com/arut/nginx-rtmp-module/archive/v${RTMP_VERSION}.t
 RUN curl -L https://github.com/kaltura/nginx-vod-module/archive/${VOD_VERSION}.tar.gz | tar xz && \
     ln -s nginx-vod-module-${VOD_VERSION} nginx-vod-module
 
-# Add modules to build rules
+# Add modules to build nginx debian rules
 ENV RTMP_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-rtmp-module-${RTMP_VERSION}"
 ENV VOD_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-vod-module-${VOD_VERSION}"
 RUN sed -ri "s/--with-ipv6/--with-ipv6 --add-module=${RTMP_MODULE_SOURCE} --add-module=${VOD_MODULE_SOURCE}/" \
         /usr/src/nginx/nginx-${NGINX_VERSION}/debian/rules
 
-# Build debian package
+# Build nginx debian package
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN dpkg-buildpackage -b
 
 # Install nginx
 WORKDIR /usr/src/nginx
 RUN dpkg -i nginx_${NGINX_VERSION}-1~jessie_amd64.deb
+
+# Add rtmp config wildcard inclusion
+RUN mkdir -p /etc/nginx/rtmp.d && \
+    printf "\nrtmp {\n\tinclude /etc/nginx/rtmp.d/*.conf;\n}\n" >> /etc/nginx/nginx.conf
+
+# Install ffmpeg / aac
+RUN echo 'deb http://www.deb-multimedia.org jessie main non-free' >> /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y --force-yes deb-multimedia-keyring && \
+    apt-get update && \
+    apt-get install -y \
+        ffmpeg
 
 # Cleanup
 RUN apt-get purge -yqq dpkg-dev && \
