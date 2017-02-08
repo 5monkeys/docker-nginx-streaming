@@ -1,19 +1,26 @@
 FROM buildpack-deps:jessie
 
-RUN apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62
-RUN echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list && \
+RUN apt-key adv --keyserver hkp://pgp.mit.edu:80 \
+                --recv-keys 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62 && \
+    curl -L -o /tmp/nginx_signing.key http://nginx.org/keys/nginx_signing.key && \
+    apt-key add /tmp/nginx_signing.key && \
+    echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list && \
     echo "deb-src http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list
 
 ENV NGINX_VERSION 1.9.6
 ENV RTMP_VERSION 1.1.7
 ENV VOD_VERSION 1.4
+ENV LUA_VERSION 0.10.7
 
 RUN mkdir -p /usr/src/nginx
 WORKDIR /usr/src/nginx
 
 # Download nginx source
 RUN apt-get update && \
-    apt-get install -y ca-certificates dpkg-dev && \
+    apt-get install -y \
+        ca-certificates \
+        dpkg-dev \
+        libluajit-5.1-dev && \
     apt-get source nginx=${NGINX_VERSION}-1~jessie && \
     apt-get build-dep -y nginx=${NGINX_VERSION}-1~jessie && \
     rm -rf /var/lib/apt/lists/*
@@ -28,10 +35,16 @@ RUN curl -L https://github.com/arut/nginx-rtmp-module/archive/v${RTMP_VERSION}.t
 RUN curl -L https://github.com/kaltura/nginx-vod-module/archive/${VOD_VERSION}.tar.gz | tar xz && \
     ln -s nginx-vod-module-${VOD_VERSION} nginx-vod-module
 
+# Download LUA module
+RUN curl -L https://github.com/openresty/lua-nginx-module/archive/v${LUA_VERSION}.tar.gz | tar xz && \
+    ln -s lua-nginx-module-${LUA_VERSION} lua-nginx-module
+
 # Add modules to build nginx debian rules
 ENV RTMP_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-rtmp-module-${RTMP_VERSION}"
 ENV VOD_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-vod-module-${VOD_VERSION}"
-RUN sed -ri "s/--with-ipv6/--with-ipv6 --add-module=${RTMP_MODULE_SOURCE} --add-module=${VOD_MODULE_SOURCE}/" \
+ENV LUA_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/lua-nginx-module"
+
+RUN sed -ri "s/--with-ipv6/--with-ipv6 --add-module=${RTMP_MODULE_SOURCE} --add-module=${VOD_MODULE_SOURCE} --add-module=${LUA_MODULE_SOURCE}/" \
         /usr/src/nginx/nginx-${NGINX_VERSION}/debian/rules
 
 # Build nginx debian package
