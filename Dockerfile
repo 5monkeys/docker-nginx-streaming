@@ -1,8 +1,9 @@
 FROM buildpack-deps:stretch
 
-RUN apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62
-RUN echo "deb http://nginx.org/packages/mainline/debian/ stretch nginx" >> /etc/apt/sources.list && \
-    echo "deb-src http://nginx.org/packages/mainline/debian/ stretch nginx" >> /etc/apt/sources.list
+RUN curl -L -o /tmp/nginx_signing.key http://nginx.org/keys/nginx_signing.key && \
+    apt-key add /tmp/nginx_signing.key && \
+    echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list && \
+    echo "deb-src http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list
 
 ENV NGINX_VERSION 1.13
 ENV RTMP_VERSION 1.2.0
