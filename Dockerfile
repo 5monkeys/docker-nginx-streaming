@@ -5,16 +5,19 @@ RUN curl -L -o /tmp/nginx_signing.key http://nginx.org/keys/nginx_signing.key &&
     echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list && \
     echo "deb-src http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list
 
+# lua-nginx-module only supports nginx <=1.11.2
 ENV NGINX_VERSION 1.11.2
 ENV NGINX_FULL_VERSION ${NGINX_VERSION}-1~jessie
 ENV RTMP_VERSION 1.2.0
 ENV VOD_VERSION 1.19
+ENV LUA_VERSION 0.10.10
 
 RUN mkdir -p /usr/src/nginx
 WORKDIR /usr/src/nginx
 
 # Download nginx source
 RUN apt-get update && \
+    apt-get install -y libluajit-5.1-dev && \
     apt-get source nginx=${NGINX_FULL_VERSION} && \
     apt-get build-dep -y nginx=${NGINX_FULL_VERSION} && \
     rm -rf /var/lib/apt/lists/*
@@ -29,11 +32,16 @@ RUN curl -L https://github.com/arut/nginx-rtmp-module/archive/v${RTMP_VERSION}.t
 RUN curl -L https://github.com/kaltura/nginx-vod-module/archive/${VOD_VERSION}.tar.gz | tar xz && \
     ln -s nginx-vod-module-${VOD_VERSION} nginx-vod-module
 
+# Download LUA module
+RUN curl -L https://github.com/openresty/lua-nginx-module/archive/v${LUA_VERSION}.tar.gz | tar xz && \
+    ln -s lua-nginx-module-${LUA_VERSION} lua-nginx-module
+
 # Add modules to build nginx debian rules
 ENV RTMP_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-rtmp-module-${RTMP_VERSION}"
 ENV VOD_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-vod-module-${VOD_VERSION}"
 RUN sed -ri "s/--with-ipv6/--with-ipv6 --add-module=${RTMP_MODULE_SOURCE} --add-module=${VOD_MODULE_SOURCE}/" \
         /usr/src/nginx/nginx-${NGINX_VERSION}/debian/rules
+ENV LUA_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/lua-nginx-module"
 
 # Build nginx debian package
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
