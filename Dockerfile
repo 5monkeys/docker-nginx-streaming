@@ -37,11 +37,10 @@ RUN curl -L https://github.com/openresty/lua-nginx-module/archive/v${LUA_VERSION
     ln -s lua-nginx-module-${LUA_VERSION} lua-nginx-module
 
 # Add modules to build nginx debian rules
-ENV RTMP_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-rtmp-module-${RTMP_VERSION}"
-ENV VOD_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-vod-module-${VOD_VERSION}"
-RUN sed -ri "s/--with-ipv6/--with-ipv6 --add-module=${RTMP_MODULE_SOURCE} --add-module=${VOD_MODULE_SOURCE}/" \
-        /usr/src/nginx/nginx-${NGINX_VERSION}/debian/rules
+ENV RTMP_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-rtmp-module"
+ENV VOD_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/nginx-vod-module"
 ENV LUA_MODULE_SOURCE "\\\/usr\\\/src\\\/nginx\\\/nginx-${NGINX_VERSION}\\\/debian\\\/modules\\\/lua-nginx-module"
+RUN sed -i "s#--with-stream_ssl_preread_module#--with-stream_ssl_preread_module --add-module=${RTMP_MODULE_SOURCE} --add-module=${VOD_MODULE_SOURCE} --add-module=${LUA_MODULE_SOURCE}#g" /usr/src/nginx/nginx-${NGINX_VERSION}/debian/rules
 
 # Build nginx debian package
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
