@@ -69,8 +69,11 @@ RUN echo 'deb http://www.deb-multimedia.org jessie main non-free' >> /etc/apt/so
 RUN ln -sf /dev/stdout /var/log/nginx/access.log
 RUN ln -sf /dev/stderr /var/log/nginx/error.log
 
+COPY envconf.sh /
+
 VOLUME ["/var/cache/nginx"]
 
 EXPOSE 80 443
 
+ENTRYPOINT ["/envconf.sh"]
 CMD ["nginx", "-g", "daemon off;"]
