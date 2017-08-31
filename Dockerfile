@@ -54,16 +54,14 @@ RUN dpkg -i nginx_${NGINX_FULL_VERSION}_amd64.deb
 RUN mkdir -p /etc/nginx/rtmp.d && \
     printf "\nrtmp {\n\tinclude /etc/nginx/rtmp.d/*.conf;\n}\n" >> /etc/nginx/nginx.conf
 
-# Install ffmpeg / aac
+# Install ffmpeg / aac / envsubst
 RUN echo 'deb http://www.deb-multimedia.org jessie main non-free' >> /etc/apt/sources.list && \
     apt-get update && \
-    apt-get install -y --force-yes deb-multimedia-keyring && \
-    apt-get update && \
-    apt-get install -y \
-        ffmpeg
-
-# Cleanup
-RUN apt-get autoremove -yqq && \
+    apt-get install -y --force-yes \
+        deb-multimedia-keyring \
+        ffmpeg \
+        gettext-base && \
+    apt-get autoremove -yqq && \
     apt-get clean -yqq && \
     rm -rf /usr/src/nginx
 
